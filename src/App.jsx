@@ -249,10 +249,6 @@ function App() {
         for (let i = 0; i < ship.length; i++) {
           const posX = isVertical ? x : x + i;
           const posY = isVertical ? y + i : y;
-          // const posXadd = isVertical ? x : x + i + 1;
-          // const posYadd = isVertical ? y + i + 1 : y;
-          // const posXsub = isVertical ? x : x + i + 1;
-          // const posYsub = isVertical ? y + i + 1 : y;
 
           if (posX >= boardSize || posY >= boardSize) {
             valid = false;
@@ -264,23 +260,33 @@ function App() {
             break;
           }
 
-          //Need to come back to this, couldnt figure out why it wasnt working
+          /*
+          I had to ask Claude how I would go about making sure that none of the ships were next to eachother
 
-          // if (posX.isVertical == true && newPlayerBoard[posY][posXadd] && posXadd <= boardSize) {
-          //   valid = false;
-          //   break;
-          // } else if (newPlayerBoard[posYadd][posX] === 'ship' && posYadd <= boardSize){
-          //   valid = false;
-          //   break;
-          // }
+          Prompt -
+          Is it possible that you could run through how I would go about making sure when the 
+          randomShips placer is placing the ships it doesnt allow the ships to be next to each other. 
+          If it is possible please run through how I would do it. 
 
-          // if (posX.isVertical == true && newPlayerBoard[posY][posXsub] && posXsub <= boardSize) {
-          //   valid = false;
-          //   break;
-          // }  else if (newPlayerBoard[posYsub][posX] === 'ship' && posYsub <= boardSize){
-          //   valid = false;
-          //   break;
-          // }
+          */
+
+          for (let dy = -1; dy <= 1; dy++){
+            for (let dx = -1; dx <= 1; dx++){
+              const checkX = posX + dx;
+              const checkY = posY + dy;
+
+              if (checkX < 0 || checkY < 0 || checkX >= boardSize || checkY >= boardSize) {
+                continue;
+              }
+
+              if (newPlayerBoard[checkY][checkX]?.status === 'ship') {
+                valid = false;
+                break;
+              }
+            }
+            if (!valid) break;
+          }
+          if (!valid) break;
         }
 
         if (valid) {
@@ -324,6 +330,24 @@ function App() {
             valid = false;
             break;
           }
+
+          for (let dy = -1; dy <= 1; dy++){
+            for (let dx = -1; dx <= 1; dx++){
+              const checkX = posX + dx;
+              const checkY = posY + dy;
+
+              if (checkX < 0 || checkY < 0 || checkX >= boardSize || checkY >= boardSize) {
+                continue;
+              }
+
+              if (newOpponentBoard[checkY][checkX]?.status === 'ship') {
+                valid = false;
+                break;
+              }
+            }
+            if (!valid) break;
+          }
+          if (!valid) break;
         }
 
         if (valid) {
