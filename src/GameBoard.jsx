@@ -1,3 +1,40 @@
+/*
+This is the prompt I started with and I used Claude as my choice of AI chatbot.
+Also I will be putting all the other prompts I used 
+because I had to teach Claude how to fix his mess of code but we got through it :insert crying emoji:
+
+1#
+Hi Claude, I have a scenario for you:
+You are a junior developer and I am your senior, we are currently working on a battleship project using react. 
+I have given you the task to create the game board function that can be customized to be 3 different sizes 
+and your allowed to decide what those sizes are. 
+The main thing with the game board function though is it needs to be able to have ships placed on it 
+and clicked on from the opposing AI. 
+Can you please do this for me?
+
+2#
+Hi Claude, you are a junior developer and I am the senior developer. 
+We are currently working on a battleship game and I have tasked you with creating the gameboard side. 
+This currently what you have and what the html is outputting. Also known issues is that the board doesnt work if you select large,
+ and if you select small then it doesnt properly load the ships. 
+Please fix the game board and if you find any errors please fix those as well.
+
+(This is me finally realizing he was using tailwind and that I infact do not want to implement tailwind)
+3#
+Can you turn all of those className styles into a css, 
+because those classname's do not exist and are throwing errors
+
+(I changed some things so I asked him to rework his code around it and I wanted to see if he would ask any questions... he didnt)
+4#
+I have changed the way that ships are loaded in as and they are now objects.
+Claude I am going to need you to fix your gameboard code to properly load the ships,
+and this proberly means your going to need to swap out certain sections that see if something has
+'ship' and make sure it has ?.status on it before checking to see if it has 'ship'. If you have any
+other questions please ask, I dont want you to try and do all of this unless you fully know what 
+I am talking about.
+
+*/
+
 import React from 'react';
 
 const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
@@ -19,18 +56,18 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
     
     if (cellState === null) {
       baseClass += "bg-blue-100 hover:bg-blue-200";
-    } else if (cellState === "ship" && isPlayerBoard) {
+    } else if (cellState?.status === "ship" && isPlayerBoard) {
       baseClass += "bg-gray-600";
-    } else if (cellState === "hit") {
+    } else if (cellState?.status === "hit") {
       baseClass += "bg-red-500";
-    } else if (cellState === "miss") {
+    } else if (cellState?.status === "miss") {
       baseClass += "bg-blue-300";
     } else {
       // For opponent's ships that haven't been hit yet - show as empty
       baseClass += "bg-blue-100 hover:bg-blue-200";
     }
     
-    if (!isPlayerBoard && (cellState === null || cellState === "ship")) {
+    if (!isPlayerBoard && (cellState === null || cellState?.status === "ship")) {
       baseClass += " cursor-pointer";
     }
     
@@ -39,11 +76,11 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
   
   // Generate cell content based on its state
   const getCellContent = (cellState, isPlayerBoard) => {
-    if (cellState === "hit") {
+    if (cellState?.status === "hit") {
       return "✗";
-    } else if (cellState === "miss") {
+    } else if (cellState?.status === "miss") {
       return "○";
-    } else if (cellState === "ship" && isPlayerBoard) {
+    } else if (cellState?.status === "ship" && isPlayerBoard) {
       return "■";
     }
     return "";
@@ -51,7 +88,7 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
   
   // Handle cell click and call the parent's onCellClick if defined
   const handleCellClick = (x, y) => {
-    if (!playerBoard && onCellClick && (gameState[y][x] === null || gameState[y][x] === "ship")) {
+    if (!playerBoard && onCellClick && (gameState[y][x] === null || gameState[y][x]?.status === "ship")) {
       onCellClick(x, y);
     }
   };

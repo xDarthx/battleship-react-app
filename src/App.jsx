@@ -8,11 +8,45 @@ const BOARD_SIZES = {
   large: 12
 };
 
+const SHIP_AMOUNTS = {
+  small: 4,
+  medium: 5,
+  large: 6
+}
+
+class Ship {
+  constructor(type, length) {
+    this.id = Math.random().toString(36).substring(2, 9);
+    this.type = type;
+    this.length = length;
+    this.hits = 0;
+    this.sunk = false;
+  }
+  
+  hit() {
+    this.hits++;
+    if (this.hits >= this.length) {
+      this.sunk = true;
+    }
+    return this.sunk;
+  }
+  
+  isSunk() {
+    return this.sunk;
+  }
+}
+
 function App() {
   const [gamePhase, setGamePhase] = useState('start'); //All phases 'start', 'selectSize', 'placeShips', 'playing', 'winLoss'
   const [selectedSize, setSelectedSize] = useState('medium');
   const [playingAgainstAI, setPlayingAgainstAI] = useState(true);
   const [whosTurn, setWhosTurn] = useState('player1');
+
+  const [playerShips, setPlayerShips] = useState([]);
+  const [opponentShips, setOpponentShips] = useState([]);
+
+  const [playerShipsSunk, setPlayerShipsSunk] = useState(0);
+  const [opponentShipsSunk, setOpponentShipsSunk] = useState(0);
 
   const createInitialBoard = (size) => {
     const boardSize = BOARD_SIZES[size] || BOARD_SIZES.medium;
@@ -22,6 +56,8 @@ function App() {
   const [playerBoardState, setPlayerBoardState] = useState(createInitialBoard('medium'));
   const [opponentBoardState, setOpponentBoardState] = useState(createInitialBoard('medium'));
 
+
+
   useEffect(() => {
     const newPlayerBoard = createInitialBoard(selectedSize);
     const newOpponentBoard = createInitialBoard(selectedSize);
@@ -30,77 +66,113 @@ function App() {
     setOpponentBoardState(newOpponentBoard);
   }, [selectedSize]);
 
+  useEffect(() => {
+    if (opponentShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
+      setGamePhase('winLoss');
+    }
+  }, [opponentShipsSunk, selectedSize]);
+
+  useEffect(() => {
+    if (playerShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
+      setGamePhase('winLoss');
+    }
+  }, [playerShipsSunk, selectedSize]);
+
   const handlePlayerShot = (x, y) => {
-    if(whosTurn === "player1"){
-      if (opponentBoardState[y][x] === "hit" || opponentBoardState[y][x] === "miss") {
-        return;
+    if(whosTurn !== "player1" || gamePhase !== 'playing'){
+      return;
+    }
+
+    const newState = [...opponentBoardState.map(row => [...row])];
+
+    if (newState[y][x]?.status === 'hit' || newState[y][x]?.status === 'miss') {
+      return;
+    }
+
+    if (newState[y][x]?.status === 'ship') {
+      const shipId = newState[y][x].shipId;
+      const shipIndex = opponentShips.findIndex(ship => ship.id === shipId);
+
+      if (shipIndex !== -1) {
+        const updatedShips = [...opponentShips];
+
+        const sunk = updatedShips[shipIndex].hit();
+
+        newState[y][x] = { status: 'hit', shipId};
+
+        setOpponentShips(updatedShips);
+
+        //I was running some code through an AI chat bot and found out you could do prev
+        if (sunk) {
+          setOpponentShipsSunk(prev => prev + 1);
+        }
       }
+    } else {
+      newState[y][x] = { status: 'miss'};
+    }
 
-      const newState = JSON.parse(JSON.stringify(opponentBoardState));
+    setOpponentBoardState(newState);
 
-      if (newState[y][x] === "ship") {
-        newState[y][x] = "hit";
-      } else if (newState[y][x] === null) {
-        newState[y][x] = "miss";
-      }
-
-      setOpponentBoardState(newState);
-
-      if (playingAgainstAI) {
-        setWhosTurn('ai');
-        setTimeout(aiLogic, 1000);
-      }
+    if(playingAgainstAI){
+      setWhosTurn('ai');
+      setTimeout(aiLogic, 1000);
     }
   };
 
   const aiLogic = () => {
+    if (gamePhase !== 'playing') return;
+    
     const boardSize = BOARD_SIZES[selectedSize];
     let attempts = 0;
-    const maxAttempts = boardSize * boardSize; 
+    const maxAttempts = boardSize * boardSize;
+    
+    // Copy the state to avoid direct mutation
+    const newState = [...playerBoardState.map(row => [...row])];
     
     while (attempts < maxAttempts) {
       const x = Math.floor(Math.random() * boardSize);
       const y = Math.floor(Math.random() * boardSize);
       
-      const newState = JSON.parse(JSON.stringify(playerBoardState));
-      
-      if (newState[y][x] !== "hit" && newState[y][x] !== "miss") {
-        if (newState[y][x] === "ship") {
-          newState[y][x] = "hit";
+      // Check if this cell has already been hit
+      if (newState[y][x]?.status !== "hit" && newState[y][x]?.status !== "miss") {
+        if (newState[y][x]?.status === "ship") {
+          // Find the ship that was hit
+          const shipId = newState[y][x].shipId;
+          const shipIndex = playerShips.findIndex(ship => ship.id === shipId);
+          
+          if (shipIndex !== -1) {
+            // Create a copy of the ships array
+            const updatedShips = [...playerShips];
+            
+            // Update the ship's hit status
+            const sunk = updatedShips[shipIndex].hit();
+            
+            // Mark the cell as hit
+            newState[y][x] = { status: "hit", shipId };
+            
+            // Update the ships array
+            setPlayerShips(updatedShips);
+            
+            // Check if this ship was sunk
+            if (sunk) {
+              setPlayerShipsSunk(prev => prev + 1);
+            }
+          }
         } else {
-          newState[y][x] = "miss";
+          newState[y][x] = { status: "miss" };
         }
         
         setPlayerBoardState(newState);
         setWhosTurn('player1');
-        return; 
+        return;
       }
       
       attempts++;
     }
     
     console.warn("AI couldn't find a valid move");
+    setWhosTurn('player1');
   };
-
-  class Ship {
-    constructor(type, length) {
-      this.type = type;
-      this.length = length;
-      this.hits = 0;
-      this.sunk = false;
-    }
-    
-    hit() {
-      this.hits++;
-      if (this.hits >= this.length) {
-        this.sunk = true;
-      }
-    }
-    
-    isSunk() {
-      return this.sunk;
-    }
-  }
 
   const playAI = () => {
     setPlayingAgainstAI(true);
@@ -114,26 +186,54 @@ function App() {
 
   const mapSize = (size) => {
     setSelectedSize(size);
+
     setGamePhase('playing');
+
+    setPlayerShipsSunk(0);
+    setOpponentShipsSunk(0);
     
-    setTimeout(() => placeRandomShips(), 0);
+    setTimeout(() => placeRandomShips(size), 10);
   };
 
-  const placeRandomShips = () => {
-    const shipTypes = [
-      {type: 'carrier', length: 5},
-      {type: 'battleship', length: 4},
-      {type: 'cruiser', length: 3},
-      {type: 'submarine', length: 3},
-      {type: 'destroyer', length: 2}
-    ];
+  const placeRandomShips = (size = selectedSize) => {
 
-    const boardSize = BOARD_SIZES[selectedSize];
+    let ships = [];
+
+    if(size === 'small') {
+      ships = [
+        new Ship('battleship', 4),
+        new Ship('cruiser', 3),
+        new Ship('submarine', 3),
+        new Ship('destroyer', 2)
+      ];
+    } else if(size  === 'medium') {
+      ships = [
+        new Ship('carrier', 5),
+        new Ship('battleship', 4),
+        new Ship('cruiser', 3),
+        new Ship('submarine', 3),
+        new Ship('destroyer', 2)
+      ];
+    } else {
+      ships = [
+        new Ship('mothership', 6),
+        new Ship('carrier', 5),
+        new Ship('battleship', 4),
+        new Ship('cruiser', 3),
+        new Ship('submarine', 3),
+        new Ship('destroyer', 2)
+      ];
+    }
+
+    const boardSize = BOARD_SIZES[size];
+
+    const playerShipsArray = ships.map(ship => new Ship(ship.type, ship.length));
+    const opponentShipsArray = ships.map(ship => new Ship(ship.type, ship.length));
     
     let newPlayerBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
     let newOpponentBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
 
-    shipTypes.forEach(ship => {
+    playerShipsArray.forEach(ship => {
       let placed = false;
       let attempts = 0;
       const maxAttempts = 100; 
@@ -149,23 +249,45 @@ function App() {
         for (let i = 0; i < ship.length; i++) {
           const posX = isVertical ? x : x + i;
           const posY = isVertical ? y + i : y;
+          // const posXadd = isVertical ? x : x + i + 1;
+          // const posYadd = isVertical ? y + i + 1 : y;
+          // const posXsub = isVertical ? x : x + i + 1;
+          // const posYsub = isVertical ? y + i + 1 : y;
 
           if (posX >= boardSize || posY >= boardSize) {
             valid = false;
             break;
           }
 
-          if (newPlayerBoard[posY][posX] === 'ship') {
+          if (newPlayerBoard[posY][posX]?.status === 'ship') {
             valid = false;
             break;
           }
+
+          //Need to come back to this, couldnt figure out why it wasnt working
+
+          // if (posX.isVertical == true && newPlayerBoard[posY][posXadd] && posXadd <= boardSize) {
+          //   valid = false;
+          //   break;
+          // } else if (newPlayerBoard[posYadd][posX] === 'ship' && posYadd <= boardSize){
+          //   valid = false;
+          //   break;
+          // }
+
+          // if (posX.isVertical == true && newPlayerBoard[posY][posXsub] && posXsub <= boardSize) {
+          //   valid = false;
+          //   break;
+          // }  else if (newPlayerBoard[posYsub][posX] === 'ship' && posYsub <= boardSize){
+          //   valid = false;
+          //   break;
+          // }
         }
 
         if (valid) {
           for (let i = 0; i < ship.length; i++) {
             const posX = isVertical ? x : x + i;
             const posY = isVertical ? y + i : y;
-            newPlayerBoard[posY][posX] = "ship";
+            newPlayerBoard[posY][posX] = { status: 'ship', shipId: ship.id };
           }
           placed = true;
         }
@@ -176,7 +298,7 @@ function App() {
       }
     });
 
-    shipTypes.forEach(ship => {
+    opponentShipsArray.forEach(ship => {
       let placed = false;
       let attempts = 0;
       const maxAttempts = 100;
@@ -198,7 +320,7 @@ function App() {
             break;
           }
 
-          if (newOpponentBoard[posY][posX] === 'ship') {
+          if (newOpponentBoard[posY][posX]?.status === 'ship') {
             valid = false;
             break;
           }
@@ -208,7 +330,7 @@ function App() {
           for (let i = 0; i < ship.length; i++) {
             const posX = isVertical ? x : x + i;
             const posY = isVertical ? y + i : y;
-            newOpponentBoard[posY][posX] = "ship";
+            newOpponentBoard[posY][posX] = { status: 'ship', shipId: ship.id};
           }
           placed = true;
         }
@@ -219,6 +341,8 @@ function App() {
       }
     });
 
+    setPlayerShips(playerShipsArray);
+    setOpponentShips(opponentShipsArray);
     setPlayerBoardState(newPlayerBoard);
     setOpponentBoardState(newOpponentBoard);
   }
@@ -273,24 +397,40 @@ function App() {
       
       {gamePhase === 'playing' && (
         <div className="flex flex-col md:flex-row gap-8 mt-4">
-          <GameBoard 
-            size={selectedSize}
-            playerBoard={true}
-            gameState={playerBoardState}
-          />
+          <div>
+            <h2 className="text-xl font-bold mb-2">Your Board</h2>
+            <p className="mb-4">Ships Sunk: {playerShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
+            <GameBoard 
+              size={selectedSize}
+              playerBoard={true}
+              gameState={playerBoardState}
+            />
+          </div>
 
-          <GameBoard 
-            size={selectedSize}
-            playerBoard={false}
-            onCellClick={(x, y) => handlePlayerShot(x, y)}
-            gameState={opponentBoardState}
-          />
+          <div>
+            <h2 className="text-xl font-bold mb-2">Opponent's Board</h2>
+            <p className="mb-4">Ships Sunk: {opponentShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
+            <GameBoard 
+              size={selectedSize}
+              playerBoard={false}
+              onCellClick={(x, y) => handlePlayerShot(x, y)}
+              gameState={opponentBoardState}
+            />
+          </div>
         </div>
       )}
 
       {gamePhase === 'winLoss' && (
-        <div className="flex flex-col md:flex-row gap-8 mt-4">
-          <h1>YOU WIN!</h1>
+        <div className="flex flex-col items-center gap-8 mt-4">
+          <h1 className="text-4xl font-bold">
+            {opponentShipsSunk >= SHIP_AMOUNTS[selectedSize] ? "YOU WIN!" : "YOU LOSE!"}
+          </h1>
+          <button 
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => setGamePhase('start')}
+          >
+            Play Again
+          </button>
         </div>
       )}
     </div>
