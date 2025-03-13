@@ -116,7 +116,48 @@ function App() {
     if(playingAgainstAI){
       setWhosTurn('ai');
       setTimeout(aiLogic, 1000);
+    } else {
+      setWhosTurn('player2');
+      // setTimeout(setGamePhase('changePlayer'), 1000);
     }
+  };
+
+  const handlePlayerTwoShot = (x, y) => {
+    if(whosTurn !== "player2" || gamePhase !== 'playing2'){
+      return;
+    }
+
+    const newState = [...playerBoardState.map(row => [...row])];
+
+    if (newState[y][x]?.status === 'hit' || newState[y][x]?.status === 'miss') {
+      return;
+    }
+
+    if (newState[y][x]?.status === 'ship') {
+      const shipId = newState[y][x].shipId;
+      const shipIndex = playerShips.findIndex(ship => ship.id === shipId);
+
+      if (shipIndex !== -1) {
+        const updatedShips = [...playerShips];
+
+        const sunk = updatedShips[shipIndex].hit();
+
+        newState[y][x] = { status: 'hit', shipId};
+
+        setPlayerShips(updatedShips);
+
+        if (sunk) {
+          setPlayerShipsSunk(prev => prev + 1);
+        }
+      }
+    } else {
+      newState[y][x] = { status: 'miss'};
+    }
+
+    setPlayerBoardState(newState);
+
+    setWhosTurn('player1');
+    // setTimeout(setGamePhase('changePlayer'), 10000);
   };
 
   const aiLogic = () => {
@@ -126,34 +167,26 @@ function App() {
     let attempts = 0;
     const maxAttempts = boardSize * boardSize;
     
-    // Copy the state to avoid direct mutation
     const newState = [...playerBoardState.map(row => [...row])];
     
     while (attempts < maxAttempts) {
       const x = Math.floor(Math.random() * boardSize);
       const y = Math.floor(Math.random() * boardSize);
       
-      // Check if this cell has already been hit
       if (newState[y][x]?.status !== "hit" && newState[y][x]?.status !== "miss") {
         if (newState[y][x]?.status === "ship") {
-          // Find the ship that was hit
           const shipId = newState[y][x].shipId;
           const shipIndex = playerShips.findIndex(ship => ship.id === shipId);
           
           if (shipIndex !== -1) {
-            // Create a copy of the ships array
             const updatedShips = [...playerShips];
             
-            // Update the ship's hit status
             const sunk = updatedShips[shipIndex].hit();
             
-            // Mark the cell as hit
             newState[y][x] = { status: "hit", shipId };
             
-            // Update the ships array
             setPlayerShips(updatedShips);
             
-            // Check if this ship was sunk
             if (sunk) {
               setPlayerShipsSunk(prev => prev + 1);
             }
@@ -268,6 +301,11 @@ function App() {
           randomShips placer is placing the ships it doesnt allow the ships to be next to each other. 
           If it is possible please run through how I would do it. 
 
+          */
+
+          /*
+          Ima just keep it a buck 50 with you....I had claude style most of the app cause I was lazy 
+          and didnt have a lot of time due to this week being crammed with everything cause of spring break
           */
 
           for (let dy = -1; dy <= 1; dy++){
@@ -441,14 +479,76 @@ function App() {
               gameState={opponentBoardState}
             />
           </div>
+          {whosTurn === "player2" && (
+            <button 
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+              onClick={() => setGamePhase('changePlayer')}
+            >
+              End Turn
+            </button>
+          )}
+        </div>
+      )}
+
+      {gamePhase === 'changePlayer' && (
+        <div className="flex flex-col items-center gap-8 mt-4">
+          <h1 className="text-4xl font-bold">
+            {whosTurn === "player2" ? "Player 2's Turn!" : "Player 1's Turn"}
+          </h1>
+          <button 
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={whosTurn === "player2" ? () => setGamePhase('playing2') : () => setGamePhase('playing')}
+          >
+            Start Turn
+          </button>
+        </div>
+      )}
+
+      {gamePhase === 'playing2' && (
+        <div className="flex flex-col md:flex-row gap-8 mt-4">
+          <div>
+            <h2 className="text-xl font-bold mb-2">Opponent's Board</h2>
+            <p className="mb-4">Ships Sunk: {playerShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
+            <GameBoard 
+              size={selectedSize}
+              playerBoard={false}
+              onCellClick={(x, y) => handlePlayerTwoShot(x, y)}
+              gameState={playerBoardState}
+            />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold mb-2">Your Board</h2>
+            <p className="mb-4">Ships Sunk: {opponentShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
+            <GameBoard 
+              size={selectedSize}
+              playerBoard={true}
+              gameState={opponentBoardState}
+            />
+          </div>
+          {whosTurn === "player1" && (
+            <button 
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+              onClick={() => setGamePhase('changePlayer')}
+            >
+              End Turn
+            </button>
+          )}
         </div>
       )}
 
       {gamePhase === 'winLoss' && (
         <div className="flex flex-col items-center gap-8 mt-4">
-          <h1 className="text-4xl font-bold">
-            {opponentShipsSunk >= SHIP_AMOUNTS[selectedSize] ? "YOU WIN!" : "YOU LOSE!"}
-          </h1>
+          {playingAgainstAI === true && (
+            <h1 className="text-4xl font-bold">
+              {opponentShipsSunk >= SHIP_AMOUNTS[selectedSize] ? "YOU WIN!" : "YOU LOSE!"}
+            </h1>
+          )} 
+          {playingAgainstAI === false && (
+            <h1 className="text-4xl font-bold">
+              {opponentShipsSunk >= SHIP_AMOUNTS[selectedSize] ? "Player 1 Wins!" : "Player 2 Wins!"}
+            </h1>
+          )}
           <button 
             className="bg-blue-500 text-white px-4 py-2 rounded"
             onClick={() => setGamePhase('start')}
