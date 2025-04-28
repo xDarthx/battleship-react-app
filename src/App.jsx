@@ -87,16 +87,12 @@ function App() {
   useEffect(() => {
     if (opponentShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
       setGamePhase('winLoss');
-      setOpponentShipsSunk(0);
-      setPlayerShipsSunk(0);
     }
   }, [opponentShipsSunk, selectedSize]);
 
   useEffect(() => {
     if (playerShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
       setGamePhase('winLoss');
-      setPlayerShipsSunk(0);
-      setOpponentShipsSunk(0);
     }
   }, [playerShipsSunk, selectedSize]);
 
@@ -454,19 +450,31 @@ function App() {
               size="small" 
               label="Small (8×8)" 
               isSelected={selectedSize === 'small'}
-              onClick={() => setSelectedSize('small')}
+              onClick={() => {
+                setSelectedSize('small');
+                setOpponentShipsSunk(0);
+                setPlayerShipsSunk(0);
+              }}
             />
             <MapSizePreview 
               size="medium" 
               label="Medium (10×10)" 
               isSelected={selectedSize === 'medium'}
-              onClick={() => setSelectedSize('medium')}
+              onClick={() => {
+                setSelectedSize('medium');
+                setOpponentShipsSunk(0);
+                setPlayerShipsSunk(0);
+              }}
             />
             <MapSizePreview 
               size="large" 
               label="Large (12×12)" 
               isSelected={selectedSize === 'large'}
-              onClick={() => setSelectedSize('large')}
+              onClick={() => {
+                setSelectedSize('large');
+                setOpponentShipsSunk(0);
+                setPlayerShipsSunk(0);
+              }}
             />
           </div>
           
