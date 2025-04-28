@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import GameBoard from './GameBoard';
 
+// Things to do 1. Create a smarter AI, 2. Drag and drop ships, 3. Create a way to pre-move
+
 const BOARD_SIZES = {
   small: 8,
   medium: 10,
@@ -36,8 +38,26 @@ class Ship {
   }
 }
 
+// Map size preview component
+const MapSizePreview = ({ size, label, isSelected, onClick }) => {
+  const gridSize = BOARD_SIZES[size];
+  
+  return (
+    <div className={`preview-button ${isSelected ? 'bg-blue-100' : ''}`} onClick={onClick}>
+      <div className={`map-preview ${size}`}>
+        {Array(gridSize).fill().map((_, i) => (
+          Array(gridSize).fill().map((_, j) => (
+            <div key={`${i}-${j}`} className="map-preview-item"></div>
+          ))
+        ))}
+      </div>
+      <div className="map-preview-label">{label}</div>
+    </div>
+  );
+};
+
 function App() {
-  const [gamePhase, setGamePhase] = useState('start'); //All phases 'start', 'selectSize', 'placeShips', 'playing', 'winLoss'
+  const [gamePhase, setGamePhase] = useState('start'); //All phases 'start', 'selectSize', 'playing', 'changePlayer', 'winLoss'
   const [selectedSize, setSelectedSize] = useState('medium');
   const [playingAgainstAI, setPlayingAgainstAI] = useState(true);
   const [whosTurn, setWhosTurn] = useState('player1');
@@ -56,8 +76,6 @@ function App() {
   const [playerBoardState, setPlayerBoardState] = useState(createInitialBoard('medium'));
   const [opponentBoardState, setOpponentBoardState] = useState(createInitialBoard('medium'));
 
-
-
   useEffect(() => {
     const newPlayerBoard = createInitialBoard(selectedSize);
     const newOpponentBoard = createInitialBoard(selectedSize);
@@ -69,12 +87,16 @@ function App() {
   useEffect(() => {
     if (opponentShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
       setGamePhase('winLoss');
+      setOpponentShipsSunk(0);
+      setPlayerShipsSunk(0);
     }
   }, [opponentShipsSunk, selectedSize]);
 
   useEffect(() => {
     if (playerShipsSunk >= SHIP_AMOUNTS[selectedSize]) {
       setGamePhase('winLoss');
+      setPlayerShipsSunk(0);
+      setOpponentShipsSunk(0);
     }
   }, [playerShipsSunk, selectedSize]);
 
@@ -102,7 +124,6 @@ function App() {
 
         setOpponentShips(updatedShips);
 
-        //I was running some code through an AI chat bot and found out you could do prev
         if (sunk) {
           setOpponentShipsSunk(prev => prev + 1);
         }
@@ -118,7 +139,6 @@ function App() {
       setTimeout(aiLogic, 1000);
     } else {
       setWhosTurn('player2');
-      // setTimeout(setGamePhase('changePlayer'), 1000);
     }
   };
 
@@ -157,7 +177,6 @@ function App() {
     setPlayerBoardState(newState);
 
     setWhosTurn('player1');
-    // setTimeout(setGamePhase('changePlayer'), 10000);
   };
 
   const aiLogic = () => {
@@ -219,17 +238,17 @@ function App() {
 
   const mapSize = (size) => {
     setSelectedSize(size);
-
-    setGamePhase('playing');
-
-    setPlayerShipsSunk(0);
-    setOpponentShipsSunk(0);
     
-    setTimeout(() => placeRandomShips(size), 10);
+    setTimeout(() => placeRandomShips(size), 100);
+
+    if(playingAgainstAI){
+      setGamePhase('playing');
+    } else {
+      setGamePhase('changePlayer')
+    }
   };
 
   const placeRandomShips = (size = selectedSize) => {
-
     let ships = [];
 
     if(size === 'small') {
@@ -301,11 +320,6 @@ function App() {
           randomShips placer is placing the ships it doesnt allow the ships to be next to each other. 
           If it is possible please run through how I would do it. 
 
-          */
-
-          /*
-          Ima just keep it a buck 50 with you....I had claude style most of the app cause I was lazy 
-          and didnt have a lot of time due to this week being crammed with everything cause of spring break
           */
 
           for (let dy = -1; dy <= 1; dy++){
@@ -410,19 +424,19 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col items-center p-4">
+    <div className="container mx-auto flex flex-col items-center p-4">
       {gamePhase === 'start' && (
         <div className="startingDiv">
-          <h1>BATTLESHIPS!</h1>
-          <div className="space-x-4">
+          <h1 className="text-4xl font-bold mb-8">BATTLESHIPS!</h1>
+          <div className="flex flex-col gap-4 md:flex-row md:space-x-4">
             <button
-              className="bg-blue-500 text-white px-4 py-2 rounded"
+              className="button button-primary"
               onClick={playAI}
             >
               Play AI
             </button>
             <button
-              className="bg-green-500 text-white px-4 py-2 rounded"
+              className="button button-success"
               onClick={playFriend}
             >
               Play A Friend
@@ -433,33 +447,43 @@ function App() {
 
       {gamePhase === 'selectSize' && (
         <div className="pickMapSizeDiv">
-          <h1 className="text-2xl font-bold mb-6">Choose Your Map Size</h1>
-          <div className="space-x-4">
+          <h1 className="text-3xl font-bold mb-6">Choose Your Map Size</h1>
+          
+          <div className="map-preview-container">
+            <MapSizePreview 
+              size="small" 
+              label="Small (8×8)" 
+              isSelected={selectedSize === 'small'}
+              onClick={() => setSelectedSize('small')}
+            />
+            <MapSizePreview 
+              size="medium" 
+              label="Medium (10×10)" 
+              isSelected={selectedSize === 'medium'}
+              onClick={() => setSelectedSize('medium')}
+            />
+            <MapSizePreview 
+              size="large" 
+              label="Large (12×12)" 
+              isSelected={selectedSize === 'large'}
+              onClick={() => setSelectedSize('large')}
+            />
+          </div>
+          
+          <div className="flex justify-center mt-4">
             <button 
-              className="bg-blue-300 px-4 py-2 rounded" 
-              onClick={() => mapSize('small')}
+              className="button button-primary px-6 py-3"
+              onClick={() => mapSize(selectedSize)}
             >
-              Small
-            </button>
-            <button 
-              className="bg-blue-400 px-4 py-2 rounded" 
-              onClick={() => mapSize('medium')}
-            >
-              Medium
-            </button>
-            <button 
-              className="bg-blue-500 px-4 py-2 rounded" 
-              onClick={() => mapSize('large')}
-            >
-              Large
+              Start Game
             </button>
           </div>
         </div>
       )}
       
       {gamePhase === 'playing' && (
-        <div className="flex flex-col md:flex-row gap-8 mt-4">
-          <div>
+        <div className="game-boards-container">
+          <div className="flex flex-col items-center">
             <h2 className="text-xl font-bold mb-2">Your Board</h2>
             <p className="mb-4">Ships Sunk: {playerShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
             <GameBoard 
@@ -469,7 +493,7 @@ function App() {
             />
           </div>
 
-          <div>
+          <div className="flex flex-col items-center">
             <h2 className="text-xl font-bold mb-2">Opponent's Board</h2>
             <p className="mb-4">Ships Sunk: {opponentShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
             <GameBoard 
@@ -480,23 +504,25 @@ function App() {
             />
           </div>
           {whosTurn === "player2" && (
-            <button 
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-              onClick={() => setGamePhase('changePlayer')}
-            >
-              End Turn
-            </button>
+            <div className="flex justify-center mt-4">
+              <button 
+                className="button button-primary"
+                onClick={() => setGamePhase('changePlayer')}
+              >
+                End Turn
+              </button>
+            </div>
           )}
         </div>
       )}
 
       {gamePhase === 'changePlayer' && (
-        <div className="flex flex-col items-center gap-8 mt-4">
+        <div className="flex flex-col items-center gap-8 mt-4 text-center">
           <h1 className="text-4xl font-bold">
             {whosTurn === "player2" ? "Player 2's Turn!" : "Player 1's Turn"}
           </h1>
           <button 
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="button button-primary"
             onClick={whosTurn === "player2" ? () => setGamePhase('playing2') : () => setGamePhase('playing')}
           >
             Start Turn
@@ -505,8 +531,8 @@ function App() {
       )}
 
       {gamePhase === 'playing2' && (
-        <div className="flex flex-col md:flex-row gap-8 mt-4">
-          <div>
+        <div className="game-boards-container">
+          <div className="flex flex-col items-center">
             <h2 className="text-xl font-bold mb-2">Opponent's Board</h2>
             <p className="mb-4">Ships Sunk: {playerShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
             <GameBoard 
@@ -517,7 +543,7 @@ function App() {
             />
           </div>
 
-          <div>
+          <div className="flex flex-col items-center">
             <h2 className="text-xl font-bold mb-2">Your Board</h2>
             <p className="mb-4">Ships Sunk: {opponentShipsSunk}/{SHIP_AMOUNTS[selectedSize]}</p>
             <GameBoard 
@@ -527,18 +553,20 @@ function App() {
             />
           </div>
           {whosTurn === "player1" && (
-            <button 
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-              onClick={() => setGamePhase('changePlayer')}
-            >
-              End Turn
-            </button>
+            <div className="flex justify-center mt-4">
+              <button 
+                className="button button-primary"
+                onClick={() => setGamePhase('changePlayer')}
+              >
+                End Turn
+              </button>
+            </div>
           )}
         </div>
       )}
 
       {gamePhase === 'winLoss' && (
-        <div className="flex flex-col items-center gap-8 mt-4">
+        <div className="win-loss-screen">
           {playingAgainstAI === true && (
             <h1 className="text-4xl font-bold">
               {opponentShipsSunk >= SHIP_AMOUNTS[selectedSize] ? "YOU WIN!" : "YOU LOSE!"}
@@ -550,7 +578,7 @@ function App() {
             </h1>
           )}
           <button 
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="button button-primary"
             onClick={() => setGamePhase('start')}
           >
             Play Again

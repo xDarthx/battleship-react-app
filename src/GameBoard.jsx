@@ -52,7 +52,7 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
   
   // Generate CSS classes for each cell based on its state
   const getCellClass = (cellState, isPlayerBoard) => {
-    let baseClass = "w-8 h-8 border border-gray-400 flex items-center justify-center ";
+    let baseClass = "board-cell ";
     
     if (cellState === null) {
       baseClass += "bg-blue-100 hover:bg-blue-200";
@@ -98,7 +98,7 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
     const headers = [];
     for (let i = 0; i < boardSize; i++) {
       headers.push(
-        <div key={`col-${i}`} className="w-8 h-8 flex items-center justify-center font-bold">
+        <div key={`col-${i}`} className="board-cell flex items-center justify-center font-bold">
           {String.fromCharCode(65 + i)}
         </div>
       );
@@ -120,36 +120,73 @@ const GameBoard = ({ size, playerBoard, gameState, onCellClick }) => {
     }
   }
   
+  // Determine the board container class based on size
+  const getBoardContainerClass = () => {
+    let baseClass = "flex flex-col items-center mb-8 ";
+    
+    switch (size) {
+      case 'small':
+        baseClass += "board-small";
+        break;
+      case 'large':
+        baseClass += "board-large";
+        break;
+      default:
+        baseClass += "board-medium";
+    }
+    
+    return baseClass;
+  };
+  
   return (
-    <div className="flex flex-col items-center mb-8">
-      <h2 className="text-xl font-bold mb-2">
-        {playerBoard ? "Your Fleet" : "Enemy Waters"}
-      </h2>
-      
-      <div className="flex">
-        <div className="w-8 h-8"></div> {/* Empty corner cell */}
-        <div className="flex">{renderColumnHeaders()}</div>
+    <div className={getBoardContainerClass()}>
+      <div className="board-inner-container">
+        <div className="flex">
+          <div className="board-cell"></div> {/* Empty corner cell */}
+          <div className="flex">{renderColumnHeaders()}</div>
+        </div>
+        
+        {Array(boardSize).fill().map((_, y) => (
+          <div key={`row-${y}`} className="flex">
+            <div className="board-cell flex items-center justify-center font-bold">
+              {y + 1}
+            </div>
+            
+            <div className="flex">
+              {Array(boardSize).fill().map((_, x) => (
+                <div
+                  key={`cell-${x}-${y}`}
+                  className={getCellClass(gameState[y][x], playerBoard)}
+                  onClick={() => handleCellClick(x, y)}
+                >
+                  {getCellContent(gameState[y][x], playerBoard)}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
       
-      {Array(boardSize).fill().map((_, y) => (
-        <div key={`row-${y}`} className="flex">
-          <div className="w-8 h-8 flex items-center justify-center font-bold">
-            {y + 1}
-          </div>
-          
-          <div className="flex">
-            {Array(boardSize).fill().map((_, x) => (
-              <div
-                key={`cell-${x}-${y}`}
-                className={getCellClass(gameState[y][x], playerBoard)}
-                onClick={() => handleCellClick(x, y)}
-              >
-                {getCellContent(gameState[y][x], playerBoard)}
+      <div className="ships-status mt-4">
+        {playerBoard && (
+          <div className="legend text-center mb-4">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gray-600 mr-2"></div>
+                <span>Your Ship</span>
               </div>
-            ))}
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-red-500 mr-2"></div>
+                <span>Hit</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-blue-300 mr-2"></div>
+                <span>Miss</span>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
   );
 };

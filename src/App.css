@@ -1,14 +1,24 @@
+/*
+Ima just keep it a buck 50 with you....I had claude style most of the app cause I was lazy 
+and didnt have a lot of time due to this week being crammed with everything cause of spring break
+*/
+
 /* General Layout */
 .flex {
   display: flex;
 }
 
 .flex-col {
+  display: flex;
   flex-direction: column;
 }
 
 .items-center {
   align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
 }
 
 .p-4 {
@@ -17,6 +27,10 @@
 
 .space-x-4 > * + * {
   margin-left: 1rem;
+}
+
+.gap-4 {
+  gap: 1rem;
 }
 
 .gap-8 {
@@ -39,9 +53,22 @@
   margin-bottom: 0.5rem;
 }
 
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Typography */
 .text-2xl {
   font-size: 1.5rem;
+}
+
+.text-3xl {
+  font-size: 2rem;
+}
+
+.text-4xl {
+  font-size: 2.5rem;
 }
 
 .text-xl {
@@ -54,6 +81,10 @@
 
 .text-white {
   color: white;
+}
+
+.text-center {
+  text-align: center;
 }
 
 /* Buttons */
@@ -83,25 +114,47 @@
   padding-bottom: 0.5rem;
 }
 
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 .rounded {
   border-radius: 0.25rem;
 }
 
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
 /* Game Board Styles */
-.w-8 {
+.board-cell {
   width: 2rem;
-}
-
-.h-8 {
   height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #9ca3af;
 }
 
-.border {
-  border-width: 1px;
+/* Cell sizes for different screens */
+@media (min-width: 640px) {
+  .board-cell {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
 
-.border-gray-400 {
-  border-color: #9ca3af;
+@media (min-width: 1024px) {
+  .board-cell {
+    width: 3rem;
+    height: 3rem;
+  }
 }
 
 .bg-blue-100 {
@@ -132,6 +185,39 @@
   cursor: pointer;
 }
 
+/* Container width based on screen size */
+.container {
+  width: 100%;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
 /* Media Queries */
 @media (min-width: 768px) {
   .md\:flex-row {
@@ -145,6 +231,13 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
+  padding: 2rem;
+}
+
+.startingDiv h1 {
+  font-size: 3rem;
+  margin-bottom: 2rem;
 }
 
 .pickMapSizeDiv {
@@ -152,4 +245,134 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
+  padding: 2rem;
+}
+
+/* Map Size Preview Styles */
+.map-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .map-preview-container {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.map-preview {
+  display: grid;
+  background-color: #dbeafe;
+  border: 2px solid #93c5fd;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  position: relative;
+}
+
+.map-preview.small {
+  grid-template-columns: repeat(8, 0.5rem);
+  grid-template-rows: repeat(8, 0.5rem);
+}
+
+.map-preview.medium {
+  grid-template-columns: repeat(10, 0.5rem);
+  grid-template-rows: repeat(10, 0.5rem);
+}
+
+.map-preview.large {
+  grid-template-columns: repeat(12, 0.5rem);
+  grid-template-rows: repeat(12, 0.5rem);
+}
+
+.map-preview-item {
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #60a5fa;
+}
+
+.map-preview-label {
+  font-weight: bold;
+  margin-top: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.preview-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.preview-button:hover {
+  transform: scale(1.05);
+  background-color: #f3f4f6;
+}
+
+/* Game board container */
+.game-boards-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .game-boards-container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* Win/Loss screen */
+.win-loss-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.win-loss-screen h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Button styles */
+.button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  text-align: center;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.button-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.button-success {
+  background-color: #22c55e;
+  color: white;
 }
